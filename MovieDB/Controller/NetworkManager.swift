@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Alamofire
 
 class NetworkManager {
     
@@ -21,6 +22,7 @@ class NetworkManager {
         
         return component
     }()
+    private let urlImage:String = "https://image.tmdb.org/t/p/w500/"
     
     func loadMovie(complition: @escaping ([Result]) -> Void) {
         urlComponent.path = "/3/movie/now_playing"
@@ -45,21 +47,24 @@ class NetworkManager {
     {
         urlComponent.path = "/3/movie/\(movieID)"
         guard let url = urlComponent.url else {return}
-        let session = URLSession(configuration: .default)
-        DispatchQueue.global().async {
-           session.dataTask(with: url) {
-                data,response,error in
-                guard let data else {return}
-                guard let movie = try? JSONDecoder().decode(MovieDetail.self, from: data) else {return}
+        AF.request(url).responseDecodable(of: MovieDetail.self) { result in
+            if let movie = try? result.result.get() {
                 DispatchQueue.main.async {
                     complition(movie)
                 }
-                
-            }.resume()
+            }
         }
+        
+        
     }
 
-    func loadImage() {
-        
+    func loadImage(posterPath:String, complition: @escaping (Data)-> Void) {
+        guard let url = URL(string: urlImage+posterPath) else {return}
+        AF.request(url).response { data in
+            guard let result = data.data else {return}
+            DispatchQueue.main.async {
+                complition(result)
+            }
+        }
     }
 }
