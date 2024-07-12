@@ -61,6 +61,21 @@ class MovieDetailViewController: UIViewController {
     
     }()
     
+    private lazy var starStackView:UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .horizontal
+        stack.spacing = 5
+        return stack
+    }()
+    
+    private lazy var ratingLabel:UILabel = {
+        let label = UILabel()
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        label.font = UIFont.systemFont(ofSize: 15)
+        return label
+    }()
+    
     var movieID = 0
     var genre:[Genre] = []
     var movieData:MovieDetail?
@@ -71,16 +86,25 @@ class MovieDetailViewController: UIViewController {
         setupUI()
         NetworkManager.shared.loadMovieDetail(movieID: movieID) { movie in
             self.movieData = movie
-            self.genre = self.movieData?.genres ?? []
-            self.genreCollectionView.reloadData()
-            self.movieTitle.text = movie.title
-            self.realiseLabel.text = "Release date \(movie.releaseDate)"
-            NetworkManager.shared.loadImage(posterPath: movie.posterPath) { data in
-                self.movieImage.image = UIImage(data: data)
-            }
+            self.content()
         }
        
     }
+    
+    func content() {
+        guard let movieData else {return}
+        genre = movieData.genres
+        genreCollectionView.reloadData()
+        movieTitle.text = movieData.title
+        realiseLabel.text = "Release date \(movieData.releaseDate ?? "comming soon")"
+        NetworkManager.shared.loadImage(posterPath: movieData.posterPath) { data in
+            self.movieImage.image = UIImage(data: data)
+        }
+        setStar(rating: movieData.voteAverage ?? 0)
+        ratingLabel.text = String(format: "%.1f/10", movieData.voteAverage ?? 0.0)
+        ratingLabel.text! += "\n \(movieData.voteCount)"
+    }
+    
     
     func setupUI() {
         view.addSubview(scrollView)
@@ -92,6 +116,9 @@ class MovieDetailViewController: UIViewController {
         [realiseLabel,genreCollectionView].forEach {
             realiseStackView.addArrangedSubview($0)
         }
+        [starStackView,ratingLabel].forEach {
+            ratingStackView.addArrangedSubview($0)
+        }
         
         scrollView.snp.makeConstraints { make in
             make.edges.equalTo(view.safeAreaLayoutGuide.snp.edges)
@@ -99,9 +126,9 @@ class MovieDetailViewController: UIViewController {
         
         movieImage.snp.makeConstraints { make in
             make.top.equalToSuperview().offset(15)
-            make.leading.equalToSuperview().offset(15)
-            make.trailing.equalToSuperview().offset(-15)
+            make.centerX.equalToSuperview()
             make.height.equalTo(424)
+            make.width.equalTo(309)
             
         }
         
@@ -115,8 +142,8 @@ class MovieDetailViewController: UIViewController {
             make.leading.bottom.equalToSuperview()
         }
         ratingStackView.snp.makeConstraints { make in
-            make.top.equalTo(movieTitle.snp.bottom).offset(10)
-            make.leading.equalTo(realiseStackView.snp.trailing)
+            make.top.equalTo(movieTitle.snp.bottom).offset(15)
+            make.leading.equalTo(realiseStackView.snp.trailing).offset(15)
             make.bottom.equalToSuperview()
         }
         genreCollectionView.snp.makeConstraints { make in
@@ -125,7 +152,12 @@ class MovieDetailViewController: UIViewController {
         }
         realiseLabel.snp.makeConstraints { make in
             make.leading.trailing.equalToSuperview()
+            make.height.equalTo(20)
         }
+        ratingLabel.snp.makeConstraints { make in
+            make.height.equalTo(30)
+        }
+        
     }
     
     
@@ -135,6 +167,37 @@ class MovieDetailViewController: UIViewController {
         layout.minimumLineSpacing = 10
         layout.minimumInteritemSpacing = 10
         return layout
+    }
+    
+    private func setStar(rating: Double) {
+        let fillStar:Int = Int(rating / 2)
+        let halfStar: Bool = Int(rating) % 2 == 1
+        
+        for _ in 1...fillStar {
+            let fillStarImageView = UIImageView(image: UIImage(named: "fill"))
+            fillStarImageView.snp.makeConstraints { make in
+                make.height.equalTo(20)
+                make.width.equalTo(20)
+            }
+            starStackView.addArrangedSubview(fillStarImageView)
+        }
+        if halfStar {
+            let halfStarImageView = UIImageView(image: UIImage(named: "half_fill"))
+            halfStarImageView.snp.makeConstraints { make in
+                make.height.equalTo(20)
+                make.width.equalTo(20)
+            }
+            starStackView.addArrangedSubview(halfStarImageView)
+        }
+        let emptyStar = 5 - fillStar - (halfStar ? 1:0)
+        for _ in 1...emptyStar {
+            let emptyStarImageView = UIImageView(image: UIImage(named: "not_fill"))
+            emptyStarImageView.snp.makeConstraints { make in
+                make.height.equalTo(20)
+                make.width.equalTo(20)
+            }
+            starStackView.addArrangedSubview(emptyStarImageView)
+        }
     }
     
 }

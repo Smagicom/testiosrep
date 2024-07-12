@@ -40,6 +40,11 @@ class MovieTableViewCell: UITableViewCell {
         fatalError("init(coder:) has not been implemented")
     }
     
+    override class func awakeFromNib() {
+        super.awakeFromNib()
+        
+    }
+    
     func setupUI() {
         contentView.addSubview(stackView)
         stackView.addArrangedSubview(movieImage)
